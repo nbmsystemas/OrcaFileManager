@@ -3,19 +3,53 @@ from subprocess import call
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer
 from textual.binding import Binding
+from textual.color import Color
 from pathlib import Path
 
 from orca.widgets.miller_columns import MillerColumns
 
 THEMES = ["default", "transparent", "pink", "carbon"]
 
+_TRANSPARENT = Color(0, 0, 0, 0)
+
+_THEME_STYLES = {
+    "default": {
+        "screen": {},
+        "header": {},
+        "footer": {},
+        "file_list": {},
+        "preview": {},
+        "divider": {},
+    },
+    "transparent": {
+        "screen":   {"background": _TRANSPARENT},
+        "header":   {"background": _TRANSPARENT},
+        "footer":   {"background": _TRANSPARENT},
+        "file_list": {"background": _TRANSPARENT},
+        "preview":  {"background": _TRANSPARENT},
+        "divider":  {"background": _TRANSPARENT},
+    },
+    "pink": {
+        "screen":   {"background": Color.parse("#2b112c")},
+        "header":   {"background": Color.parse("#2b112c")},
+        "footer":   {"background": Color.parse("#2b112c")},
+        "file_list": {"background": Color.parse("#2b112c")},
+        "preview":  {"background": Color.parse("#3e1236")},
+        "divider":  {"background": Color.parse("#ff3399")},
+    },
+    "carbon": {
+        "screen":   {"background": Color.parse("#1e1e1e")},
+        "header":   {"background": Color.parse("#1e1e1e")},
+        "footer":   {"background": Color.parse("#1e1e1e")},
+        "file_list": {"background": Color.parse("#1e1e1e")},
+        "preview":  {"background": Color.parse("#252525")},
+        "divider":  {"background": Color.parse("#555555")},
+    },
+}
+
 
 class OrcaApp(App):
     CSS_PATH = "themes/default.tcss"
-
-    # This tells Textual to NOT paint its own background, letting the
-    # terminal emulator's compositing (transparency) show through.
-    FEATURES = frozenset(["transparent"])
 
     BINDINGS = [
         Binding("q", "quit", "Quit"),
@@ -40,9 +74,38 @@ class OrcaApp(App):
 
     def on_mount(self):
         self.title = "OrcaFileManager 🐋"
-        self.theme_idx = 1
-        # Start with the transparent theme applied
-        self.screen.add_class("theme-transparent")
+        self.theme_idx = 1  # Start on transparent
+        self._apply_theme("transparent")
+
+    def _apply_theme(self, name: str):
+        styles = _THEME_STYLES.get(name, _THEME_STYLES["default"])
+
+        def _set(widget, key, val):
+            setattr(widget.styles, key, val)
+
+        # Screen
+        for k, v in styles["screen"].items():
+            _set(self.screen, k, v)
+
+        # Header & Footer
+        header = self.query_one(Header)
+        footer = self.query_one(Footer)
+        for k, v in styles["header"].items():
+            _set(header, k, v)
+        for k, v in styles["footer"].items():
+            _set(footer, k, v)
+
+        # Panels inside MillerColumns
+        file_list = self.columns.file_list
+        preview = self.columns.preview_panel
+        divider = self.columns._divider
+
+        for k, v in styles["file_list"].items():
+            _set(file_list, k, v)
+        for k, v in styles["preview"].items():
+            _set(preview, k, v)
+        for k, v in styles["divider"].items():
+            _set(divider, k, v)
 
     def action_go_up(self):
         self.columns.go_up()
@@ -83,15 +146,9 @@ class OrcaApp(App):
         )
 
     def action_cycle_theme(self):
-        # Remove current theme class
-        current_theme = THEMES[self.theme_idx]
-        self.screen.remove_class(f"theme-{current_theme}")
-
-        # Advance to next
         self.theme_idx = (self.theme_idx + 1) % len(THEMES)
         next_theme = THEMES[self.theme_idx]
-        self.screen.add_class(f"theme-{next_theme}")
-
+        self._apply_theme(next_theme)
         self.notify(f"Theme: {next_theme}", timeout=1)
 
 

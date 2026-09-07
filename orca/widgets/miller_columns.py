@@ -18,9 +18,9 @@ class PreviewPanel(Static):
     """
 
     def show_preview(self, path: Path):
-        # Pass the actual panel size so images fill the preview area properly
-        w = max(self.size.width - 4, 20)
-        h = max(self.size.height - 2, 10)
+        # Use real panel size; fall back to 80x40 if the widget hasn't been laid out yet
+        w = self.size.width - 4 if self.size.width > 4 else 80
+        h = self.size.height - 2 if self.size.height > 2 else 40
         self.update(get_preview(path, max_w=w, max_h=h))
 
 
