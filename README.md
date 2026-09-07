@@ -28,7 +28,7 @@
 ## ⚡ Quick Install (one command)
 
 ```bash
-pip install git+https://github.com/nbmsystemas/OrcaFileManager.git
+pipx install git+https://github.com/nbmsystemas/OrcaFileManager.git
 ```
 
 Then launch with:

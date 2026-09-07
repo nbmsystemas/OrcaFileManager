@@ -24,25 +24,25 @@ PreviewPanel {
 
 /* Theme: Transparent (respeta tu terminal de fondo) */
 Screen.theme-transparent {
-    background: $background 0%;
+    background: transparent;
 }
 Screen.theme-transparent MillerColumns {
-    background: $background 0%;
+    background: transparent;
 }
 Screen.theme-transparent OptionList {
-    background: $background 0%;
+    background: transparent;
     border: solid rgba(255,255,255,0.3);
 }
 Screen.theme-transparent OptionList:focus {
     border: solid rgba(0,255,0,0.7);
-    background: $background 0%;
+    background: transparent;
 }
 Screen.theme-transparent PreviewPanel {
-    background: $background 0%;
+    background: transparent;
     border: solid rgba(255,255,255,0.2);
 }
 Screen.theme-transparent ColumnDivider {
-    background: $background 0%;
+    background: transparent;
 }
 
 /* Theme: Pink (Synthwave) */

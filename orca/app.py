@@ -7,9 +7,16 @@ from pathlib import Path
 
 from orca.widgets.miller_columns import MillerColumns
 
+THEMES = ["default", "transparent", "pink", "carbon"]
+
+
 class OrcaApp(App):
     CSS_PATH = "themes/default.tcss"
-    
+
+    # This tells Textual to NOT paint its own background, letting the
+    # terminal emulator's compositing (transparency) show through.
+    FEATURES = frozenset(["transparent"])
+
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("h", "go_up", "Parent Dir"),
@@ -31,30 +38,38 @@ class OrcaApp(App):
         yield self.columns
         yield Footer()
 
+    def on_mount(self):
+        self.title = "OrcaFileManager 🐋"
+        self.theme_idx = 1
+        # Start with the transparent theme applied
+        self.screen.add_class("theme-transparent")
+
     def action_go_up(self):
         self.columns.go_up()
-        
+
     def action_go_home(self):
         self.columns.current_path = Path.home()
-        
+
+    def action_go_root(self):
+        self.columns.current_path = Path("/")
+
     def action_goto_path(self):
         from orca.dialogs.goto import GotoDialog
         def check_path(path: Path | None):
             if path is not None:
                 self.columns.current_path = path
         self.push_screen(GotoDialog(), check_path)
-        
+
     def action_edit_file(self):
         path = self.columns.highlighted_path
         if path and path.is_file():
-            # Suspende la interfaz y lanza el editor del sistema
             editor = os.environ.get("EDITOR", "nano")
             with self.suspend():
                 call([editor, str(path)])
-                
+
     def action_shrink_cols(self):
         self.columns.adjust_width(-5)
-        
+
     def action_expand_cols(self):
         self.columns.adjust_width(5)
 
@@ -67,23 +82,18 @@ class OrcaApp(App):
             timeout=2,
         )
 
-    def action_go_root(self):
-        self.columns.current_path = Path("/")
-
     def action_cycle_theme(self):
-        themes = ["", "theme-transparent", "theme-pink", "theme-light-black"]
-        current_idx = getattr(self, "theme_idx", 0)
-        
-        if themes[current_idx]:
-            self.screen.remove_class(themes[current_idx])
-            
-        self.theme_idx = (current_idx + 1) % len(themes)
-        
-        if themes[self.theme_idx]:
-            self.screen.add_class(themes[self.theme_idx])
-        
-    def on_mount(self):
-        self.title = "OrcaFileManager 🐋"
+        # Remove current theme class
+        current_theme = THEMES[self.theme_idx]
+        self.screen.remove_class(f"theme-{current_theme}")
+
+        # Advance to next
+        self.theme_idx = (self.theme_idx + 1) % len(THEMES)
+        next_theme = THEMES[self.theme_idx]
+        self.screen.add_class(f"theme-{next_theme}")
+
+        self.notify(f"Theme: {next_theme}", timeout=1)
+
 
 if __name__ == "__main__":
     app = OrcaApp()
