@@ -6,32 +6,33 @@ from orca.utils import format_size, format_date
 
 IMAGE_EXTS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.tiff', '.ico'}
 
-def render_image(path: Path) -> Text:
+def render_image(path: Path, max_w: int = 80, max_h: int = 40) -> Text:
     try:
         from PIL import Image
         img = Image.open(path).convert("RGB")
-        # Terminal characters are roughly 2x taller than wide.
-        max_w, max_h = 60, 30
+        # Terminal chars are ~2x taller than wide, so multiply height by 2
         img.thumbnail((max_w, max_h * 2), Image.Resampling.LANCZOS)
-        
+
         # Ensure height is even for half-block rendering
         if img.height % 2 != 0:
             img = img.crop((0, 0, img.width, img.height - 1))
-            
+
         lines = []
+        pixels = img.load()
         for y in range(0, img.height, 2):
             line = Text()
             for x in range(img.width):
-                r1, g1, b1 = img.getpixel((x, y))
-                r2, g2, b2 = img.getpixel((x, y+1))
+                r1, g1, b1 = pixels[x, y]
+                r2, g2, b2 = pixels[x, y + 1]
                 line.append("▀", style=f"rgb({r1},{g1},{b1}) on rgb({r2},{g2},{b2})")
             lines.append(line)
-            
+
         return Text("\n").join(lines)
     except Exception as e:
         return Text(f"Error loading image: {str(e)}", style="red")
 
-def get_preview(path: Path) -> object:
+
+def get_preview(path: Path, max_w: int = 80, max_h: int = 40) -> object:
     if not path.exists():
         return Text("File does not exist.", style="red")
         
@@ -43,7 +44,7 @@ def get_preview(path: Path) -> object:
             return Text("Permission Denied.", style="red")
             
     if path.suffix.lower() in IMAGE_EXTS:
-        return render_image(path)
+        return render_image(path, max_w=max_w, max_h=max_h)
         
     # Try reading as text
     try:

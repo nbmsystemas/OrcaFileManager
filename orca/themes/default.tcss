@@ -26,6 +26,12 @@ PreviewPanel {
 Screen.theme-transparent {
     background: transparent;
 }
+Screen.theme-transparent Header {
+    background: transparent;
+}
+Screen.theme-transparent Footer {
+    background: transparent;
+}
 Screen.theme-transparent MillerColumns {
     background: transparent;
 }

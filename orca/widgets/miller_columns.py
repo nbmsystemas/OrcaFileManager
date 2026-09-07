@@ -13,13 +13,15 @@ class PreviewPanel(Static):
     PreviewPanel {
         height: 100%;
         padding: 1 2;
-        border: solid blue;
         overflow-y: auto;
     }
     """
 
     def show_preview(self, path: Path):
-        self.update(get_preview(path))
+        # Pass the actual panel size so images fill the preview area properly
+        w = max(self.size.width - 4, 20)
+        h = max(self.size.height - 2, 10)
+        self.update(get_preview(path, max_w=w, max_h=h))
 
 
 class ColumnDivider(Static):
@@ -29,11 +31,9 @@ class ColumnDivider(Static):
     ColumnDivider {
         width: 1;
         height: 100%;
-        background: $accent 30%;
-        color: $accent;
     }
     ColumnDivider:hover {
-        background: $accent 80%;
+        background: $accent 50%;
     }
     """
 
