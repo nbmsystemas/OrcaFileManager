@@ -1,57 +1,126 @@
 import os
-from subprocess import call
-from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer
-from textual.binding import Binding
-from textual.color import Color
+import subprocess
 from pathlib import Path
+from subprocess import call
+from typing import ClassVar
 
+from textual.app import App, ComposeResult
+from textual.binding import Binding, BindingType
+from textual.widgets import Footer, Header
+
+from orca.utils import open_with_default_application
 from orca.widgets.miller_columns import MillerColumns
 
 THEMES = ["default", "transparent", "pink", "carbon"]
 
-_TRANSPARENT = Color(0, 0, 0, 0)
-
-_THEME_STYLES = {
-    "default": {
-        "screen": {},
-        "header": {},
-        "footer": {},
-        "file_list": {},
-        "preview": {},
-        "divider": {},
-    },
-    "transparent": {
-        "screen":   {"background": _TRANSPARENT},
-        "header":   {"background": _TRANSPARENT},
-        "footer":   {"background": _TRANSPARENT},
-        "file_list": {"background": _TRANSPARENT},
-        "preview":  {"background": _TRANSPARENT},
-        "divider":  {"background": _TRANSPARENT},
-    },
-    "pink": {
-        "screen":   {"background": Color.parse("#2b112c")},
-        "header":   {"background": Color.parse("#2b112c")},
-        "footer":   {"background": Color.parse("#2b112c")},
-        "file_list": {"background": Color.parse("#2b112c")},
-        "preview":  {"background": Color.parse("#3e1236")},
-        "divider":  {"background": Color.parse("#ff3399")},
-    },
-    "carbon": {
-        "screen":   {"background": Color.parse("#1e1e1e")},
-        "header":   {"background": Color.parse("#1e1e1e")},
-        "footer":   {"background": Color.parse("#1e1e1e")},
-        "file_list": {"background": Color.parse("#1e1e1e")},
-        "preview":  {"background": Color.parse("#252525")},
-        "divider":  {"background": Color.parse("#555555")},
-    },
+# CSS loaded as user CSS (highest priority, overrides Textual defaults).
+# OptionList renders its rows with classes, not child widget type selectors.
+_THEME_CSS = """
+/* ── Transparent theme ─────────────────────────────────────── */
+Screen.theme-transparent {
+    background: transparent;
 }
+Screen.theme-transparent Header {
+    background: transparent;
+}
+Screen.theme-transparent Footer {
+    background: transparent;
+}
+Screen.theme-transparent MillerColumns {
+    background: transparent;
+}
+Screen.theme-transparent FileList {
+    background: transparent;
+}
+Screen.theme-transparent OptionList {
+    background: transparent;
+}
+Screen.theme-transparent PreviewPanel {
+    background: transparent;
+}
+Screen.theme-transparent ColumnDivider {
+    background: transparent;
+    color: #ffffff 40%;
+}
+Screen.theme-transparent .option-list--option {
+    background: transparent;
+}
+Screen.theme-transparent .option-list--option-highlighted {
+    background: #ffffff 15%;
+}
+Screen.theme-transparent .option-list--option-hover {
+    background: #ffffff 8%;
+}
+
+/* ── Pink (Synthwave) ────────────────────────────────────────── */
+Screen.theme-pink {
+    background: #2b112c;
+}
+Screen.theme-pink Header {
+    background: #2b112c;
+}
+Screen.theme-pink Footer {
+    background: #2b112c;
+}
+Screen.theme-pink MillerColumns {
+    background: #2b112c;
+}
+Screen.theme-pink FileList {
+    background: #2b112c;
+}
+Screen.theme-pink OptionList {
+    background: #2b112c;
+    color: #ffb6c1;
+}
+Screen.theme-pink .option-list--option-highlighted {
+    background: #ff3366 20%;
+}
+Screen.theme-pink PreviewPanel {
+    background: #3e1236;
+    color: #ffb6c1;
+}
+Screen.theme-pink ColumnDivider {
+    background: #ff3399;
+}
+
+/* ── Carbon ──────────────────────────────────────────────────── */
+Screen.theme-carbon {
+    background: #1e1e1e;
+}
+Screen.theme-carbon Header {
+    background: #1e1e1e;
+}
+Screen.theme-carbon Footer {
+    background: #1e1e1e;
+}
+Screen.theme-carbon MillerColumns {
+    background: #1e1e1e;
+}
+Screen.theme-carbon FileList {
+    background: #1e1e1e;
+}
+Screen.theme-carbon OptionList {
+    background: #1e1e1e;
+    color: #dddddd;
+}
+Screen.theme-carbon .option-list--option-highlighted {
+    background: #3a3a3a;
+}
+Screen.theme-carbon PreviewPanel {
+    background: #252525;
+    color: #dddddd;
+}
+Screen.theme-carbon ColumnDivider {
+    background: #555555;
+}
+"""
 
 
 class OrcaApp(App):
     CSS_PATH = "themes/default.tcss"
+    CSS = _THEME_CSS
 
-    BINDINGS = [
+    BINDINGS: ClassVar[list[BindingType]] = [
         Binding("q", "quit", "Quit"),
         Binding("h", "go_up", "Parent Dir"),
         Binding("backspace", "go_up", "Parent Dir"),
@@ -75,37 +144,13 @@ class OrcaApp(App):
     def on_mount(self):
         self.title = "OrcaFileManager 🐋"
         self.theme_idx = 1  # Start on transparent
-        self._apply_theme("transparent")
+        self._set_theme(THEMES[self.theme_idx])
 
-    def _apply_theme(self, name: str):
-        styles = _THEME_STYLES.get(name, _THEME_STYLES["default"])
-
-        def _set(widget, key, val):
-            setattr(widget.styles, key, val)
-
-        # Screen
-        for k, v in styles["screen"].items():
-            _set(self.screen, k, v)
-
-        # Header & Footer
-        header = self.query_one(Header)
-        footer = self.query_one(Footer)
-        for k, v in styles["header"].items():
-            _set(header, k, v)
-        for k, v in styles["footer"].items():
-            _set(footer, k, v)
-
-        # Panels inside MillerColumns
-        file_list = self.columns.file_list
-        preview = self.columns.preview_panel
-        divider = self.columns._divider
-
-        for k, v in styles["file_list"].items():
-            _set(file_list, k, v)
-        for k, v in styles["preview"].items():
-            _set(preview, k, v)
-        for k, v in styles["divider"].items():
-            _set(divider, k, v)
+    def _set_theme(self, selected_theme: str):
+        for theme in THEMES:
+            self.screen.remove_class(f"theme-{theme}")
+        if selected_theme != "default":
+            self.screen.add_class(f"theme-{selected_theme}")
 
     def action_go_up(self):
         self.columns.go_up()
@@ -116,11 +161,23 @@ class OrcaApp(App):
     def action_go_root(self):
         self.columns.current_path = Path("/")
 
+    def action_enter_dir(self):
+        """Open the highlighted directory or regular file."""
+        path = self.columns.highlighted_path
+        if not path:
+            return
+        if path.is_dir():
+            self.columns.current_path = path
+        elif path.is_file():
+            self.on_file_list_file_selected(self.columns.file_list.FileSelected(path))
+
     def action_goto_path(self):
         from orca.dialogs.goto import GotoDialog
+
         def check_path(path: Path | None):
             if path is not None:
                 self.columns.current_path = path
+
         self.push_screen(GotoDialog(), check_path)
 
     def action_edit_file(self):
@@ -145,10 +202,21 @@ class OrcaApp(App):
             timeout=2,
         )
 
+    def on_file_list_file_selected(self, event):
+        try:
+            open_with_default_application(event.path)
+        except (OSError, subprocess.SubprocessError) as exc:
+            self.notify(
+                f"Could not open {event.path.name}: {exc}",
+                title="Open failed",
+                severity="error",
+                timeout=4,
+            )
+
     def action_cycle_theme(self):
         self.theme_idx = (self.theme_idx + 1) % len(THEMES)
         next_theme = THEMES[self.theme_idx]
-        self._apply_theme(next_theme)
+        self._set_theme(next_theme)
         self.notify(f"Theme: {next_theme}", timeout=1)
 
 

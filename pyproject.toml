@@ -16,8 +16,15 @@ dependencies = [
     "rich>=13.7.0"
 ]
 
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
 [project.scripts]
 orca = "orca.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["orca"]
+
+[tool.pyright]
+venvPath = "."
+venv = "venv"
