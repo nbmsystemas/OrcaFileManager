@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "orca-filemanager"
+version = "0.1.0"
+description = "A terminal file manager with Miller columns and steroids"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "textual>=0.52.0",
+    "send2trash>=1.8.2",
+    "pillow>=10.2.0",
+    "rich>=13.7.0"
+]
+
+[project.scripts]
+orca = "orca.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["orca"]
